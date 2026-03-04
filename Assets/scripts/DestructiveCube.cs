@@ -1,8 +1,21 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class DestructiveCube : MonoBehaviour
 {
+    [Header("Game Over UI")]
+    public GameObject gameOverScreen; // Drag a UI panel into this slot
+
+    private static bool gameIsOver = false;
+
+    void Start()
+    {
+        gameIsOver = false;
+        if (gameOverScreen != null)
+            gameOverScreen.SetActive(false);
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         HandleContact(collision.gameObject);
@@ -10,23 +23,36 @@ public class DestructiveCube : MonoBehaviour
 
     private void HandleContact(GameObject other)
     {
-        // Kill player = reload the scene (game over)
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && !gameIsOver)
         {
-            GameOver();
+            gameIsOver = true;
+            GameOver(other.gameObject);
         }
 
-        // Destroy platforms on contact
         if (other.CompareTag("Platform"))
         {
             Destroy(other.gameObject);
         }
     }
 
-    private void GameOver()
+    private void GameOver(GameObject player)
     {
-        // Small delay feels better than instant reload
-        Invoke("ReloadScene", 0.5f);
+        // Freeze the player in place
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+
+        // Show game over screen if assigned
+        if (gameOverScreen != null)
+            gameOverScreen.SetActive(true);
+        else
+            Invoke("ReloadScene", 1f); // fallback: just reload
+    }
+
+    // Hook this up to a Retry button in your UI
+    public void Retry()
+    {
+        gameIsOver = false;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     private void ReloadScene()
